@@ -1,67 +1,56 @@
-# Importing required libraries
+"""
+Created on Mon Nov 13 13:04:19 2023
+
+@author: sudha
+"""
+
+import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.preprocessing import LabelEncoder
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.metrics import accuracy_score, confusion_matrix
 
-# Path to your dataset
-file_path = r'C:\Users\Pavan\Downloads\Documents\Blood_samples_dataset_balanced_2(f).csv'  # Use raw string to avoid escape characters
+# Function to predict diseases based on symptoms
+def predict_diseases(symptoms):
+    # Creating input data for the model
+    input_data = [0] * len(features.columns)
+    for symptom in symptoms:
+        if symptom in features.columns:
+            index = features.columns.get_loc(symptom)
+            input_data[index] = 1
 
-# Load the dataset (replace 'health_data.csv' with your actual dataset file name)
-df = pd.read_csv(r'C:\Users\Pavan\Downloads\Documents\Blood_samples_dataset_balanced_2(f).csv)
+    # Reshaping the input data
+    input_data = pd.DataFrame([input_data], columns=features.columns)
 
-# Display first few rows of the dataset
-print(df.head())
+    # Generating predictions
+    predictions = rf.predict(input_data)
+    return predictions
 
-# Assuming the dataset has the following columns:
-# 'Age', 'Gender', 'Cholesterol', 'Blood Sugar', 'BMI', 'Family History', 'Heart Attack', 'Diabetes'
+# Load data
+train_data = pd.read_csv('Multiple disease prediction/Training.csv')
+test_data = pd.read_csv('Multiple disease prediction/Testing.csv')
 
-# Features (X) - excluding the target variables
-X = df.drop(columns=['Heart Attack', 'Diabetes'])
+# Split data into features and target variable
+features = train_data.drop('prognosis', axis=1)
+target = train_data['prognosis']
 
-# Target labels (Y) - 'Heart Attack' and 'Diabetes'
-Y = df[['Heart Attack', 'Diabetes']]
-
-# Encoding categorical variables (e.g., Gender, Family History if they are categorical)
-label_encoder = LabelEncoder()
-for column in X.select_dtypes(include=['object']).columns:
-    X[column] = label_encoder.fit_transform(X[column])
-
-# Split the data into training and testing sets
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-
-# Initialize the RandomForestClassifier (You can try other classifiers as well)
-model = RandomForestClassifier(n_estimators=100, random_state=42)
+# Create RandomForestClassifier
+rf = RandomForestClassifier(n_estimators=100)
 
 # Train the model
-model.fit(X_train, Y_train)
+rf.fit(features, target)
 
-# Predict on the test set
-Y_pred = model.predict(X_test)
+# Streamlit app
+st.title("Multiple Disease Prediction using Symptoms")
 
-# Evaluate the model's performance for each disease
-for i, column in enumerate(Y.columns):
-    print(f"Performance for {column}:")
-    print(f"Accuracy: {accuracy_score(Y_test[column], Y_pred[:, i]):.4f}")
-    print(classification_report(Y_test[column], Y_pred[:, i]))
-    print("\n")
+# User input for symptoms
+symptoms = st.text_input("Enter Symptoms (comma-separated)")
 
-# Visualizing feature importances
-feature_importances = model.feature_importances_
-features = X.columns
+# Initialize the result
+diagnosis = ''
 
-# Create a DataFrame for easier visualization
-importance_df = pd.DataFrame({
-    'Feature': features,
-    'Importance': feature_importances
-}).sort_values(by='Importance', ascending=False)
+# Create a button to check symptoms
+if st.button("Check Symptoms"):
+    # Call the predict_diseases function with user input
+    diseases = predict_diseases(symptoms.split(","))
+    st.success(f"Predicted Diseases: {', '.join(diseases
 
-# Plotting feature importance
-plt.figure(figsize=(10, 6))
-sns.barplot(x='Importance', y='Feature', data=importance_df)
-plt.title("Feature Importance for Heart Attack and Diabetes Prediction")
-plt.show()
